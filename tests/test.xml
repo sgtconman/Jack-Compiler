@@ -1,30 +1,18 @@
-<tokens>
+<class>
 <keyword> class </keyword>
 <identifier> Main </identifier>
 <symbol> { </symbol>
-<keyword> function </keyword>
-<keyword> void </keyword>
-<identifier> main </identifier>
-<symbol> ( </symbol>
-<symbol> ) </symbol>
-<symbol> { </symbol>
-<keyword> var </keyword>
-<identifier> Array </identifier>
-<identifier> a </identifier>
+<classVarDec>
+<keyword> static </keyword>
+<keyword> boolean </keyword>
+<identifier> test </identifier>
 <symbol> ; </symbol>
-<keyword> var </keyword>
-<keyword> int </keyword>
-<identifier> length </identifier>
+</classVarDec>
+<classVarDec>
+<keyword> field </keyword>
+<keyword> boolean </keyword>
+<identifier> test2 </identifier>
 <symbol> ; </symbol>
-<keyword> var </keyword>
-<keyword> int </keyword>
-<identifier> i </identifier>
-<symbol> , </symbol>
-<identifier> sum </identifier>
-<symbol> ; </symbol>
-<keyword> let </keyword>
-<identifier> i </identifier>
-<symbol> = </symbol>
-<integerConstant> 0 </integerConstant>
-<symbol> ; </symbol>
-</tokens>
+</classVarDec>
+<symbol> } </symbol>
+</class>

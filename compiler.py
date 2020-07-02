@@ -3,7 +3,6 @@ import os
 import glob
 import re
 
-
 symbol_list = ['{' , '}' , '(' , ')' , '[' , ']' , '. ' , ', ' , '; ' , '+' , '-' , '*' ,
 '/' , '&' , '|' , '<' , '>' , '=' , '~’']
 
@@ -20,16 +19,8 @@ class token:
 
 def main():
 
-    if len(sys.argv) != 2:
-        sys.exit("input 1 argument: [program].jack or Jack file directory")
-
-    #determines if command line input is file or directory and puts .jack file names in a list
-    jack_files = []
-    if os.path.isdir(sys.argv[1]):
-        dir_path = sys.argv[1]
-        jack_files = glob.glob(dir_path + "/*.jack")
-    else:
-        jack_files.append(sys.argv[1])
+    #checks for valid input and adds Jack filenames to list
+    jack_files = initializer(sys.argv)
 
     for file in jack_files:
 
@@ -40,12 +31,14 @@ def main():
         # cleans code and writes each token into list of token objects
         token_list = tokenizer(jack_code)
 
+
+        parsed_code = parse_class(token_list)
+
         # temp code to print tokens xml file
         token_code = []
-        token_code.append('<tokens>\n')
-        for t in token_list:
-            token_code.append(t.xml_out + '\n')
-        token_code.append('</tokens>\n')
+
+        for t in parsed_code:
+            token_code.append(t + '\n')
 
         # creates .xml output file and opens for writing
         xml_file_name = file.strip(".jack") + ".xml"
@@ -55,6 +48,83 @@ def main():
         xml_file.writelines(token_code)
         xml_file.close()
 
+def initializer(cmd_args):
+
+    if len(cmd_args) != 2:
+        sys.exit("input 1 argument: [program].jack or Jack file directory")
+
+    #determines if command line input is file or directory and puts .jack file names in a list
+    jack_files = []
+    if os.path.isdir(sys.argv[1]):
+        dir_path = sys.argv[1]
+        jack_files = glob.glob(dir_path + "/*.jack")
+    else:
+        jack_files.append(sys.argv[1])
+
+    return jack_files
+
+def parse_class(t_list):
+
+    # tracks current token
+    t_count = 0
+    parsed_list = []
+
+    # structured: 'class' className '{' classVarDec* subrountineDec* '}'
+    parsed_list.append('<class>')
+    parsed_list.append(t_list[t_count].xml_out) # class
+    t_count += 1
+    parsed_list.append(t_list[t_count].xml_out) # className
+    t_count += 1
+    parsed_list.append(t_list[t_count].xml_out) # {
+    t_count += 1
+    while t_list[t_count].value in ['static', 'field']:
+        t_count = parse_classVarDec(parsed_list, t_list, t_count)
+
+    #while t_list[t_count].value in ['constructor', 'function', 'method']:
+        #t_count = parse_subroutineDec(parsed_list, t_list, t_count)
+
+    parsed_list.append(t_list[t_count].xml_out) # }
+
+    parsed_list.append('</class>')
+
+    return parsed_list
+
+def parse_subroutineDec(parsed_list, t_list, t_count):
+
+    # structured: 'constructor'|'function'|'method' 'void'|type subroutineName '(' parameterList ')' subroutineBody
+    parsed_list.append('<subroutineDec>')
+    parsed_list.append(t_list[t_count].xml_out) # constructor|function|method
+    t_count += 1
+    parsed_list.append(t_list[t_count].xml_out) # 'void'|type
+    t_count += 1
+    parsed_list.append(t_list[t_count].xml_out) # subroutineName
+    t_count += 1
+    
+    parsed_list.append('</subroutineDec>')
+    return t_count
+
+
+def parse_classVarDec(parsed_list, t_list, t_count):
+
+    # structured: 'static'|'field' type varName (',' varName)* ';'
+    parsed_list.append('<classVarDec>')
+    parsed_list.append(t_list[t_count].xml_out) # static|field
+    t_count += 1
+    parsed_list.append(t_list[t_count].xml_out) # type
+    t_count += 1
+    parsed_list.append(t_list[t_count].xml_out) # varName
+    t_count += 1
+    while t_list[t_count] == ',': # checks for additiional variable declarations
+        parsed_list.append(t_list[t_count].xml_out) # ,
+        t_count += 1
+        parsed_list.append(t_list[t_count].xml_out) # varName
+        t_count += 1
+    parsed_list.append(t_list[t_count].xml_out) # ;
+    t_count += 1
+
+    parsed_list.append('</classVarDec>')
+    return t_count
+
 
 def tokenizer(raw_code):
 
@@ -63,13 +133,13 @@ def tokenizer(raw_code):
     cleaned_code = re.sub('//.*','', cleaned_code) #removes in-line comments denoted with //
     cleaned_code = re.sub('\\n',' ', cleaned_code) #removes newlines
 
-    # creates regular expression objects to mathc Jack tokens
+    # creates regular expression objects to match Jack tokens
     symbol_pattern = re.compile('[\{\}\(\)\[\]\.\,\;\+\-\*\/\&\|\<\>\=\~]')
     string_pattern = re.compile('\".*?\"')
     var_pattern = re.compile('[a-zA-Z_][a-zA-Z0-9_]*')
     int_pattern = re.compile('[0-9]')
 
-    # initializes variables needed for tokenizing
+    # initializes variables needed for tokenizing. i is char tracker
     token_list = []
     type = ''
     buffer = ''
