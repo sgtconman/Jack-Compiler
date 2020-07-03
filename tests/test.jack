@@ -1,5 +1,1 @@
-class Main {
-    static boolean test;
-    field boolean test2;
-
-}
+while self.t_list[self.t_count].type in ['keyword','identifier']:

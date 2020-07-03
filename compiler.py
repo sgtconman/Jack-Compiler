@@ -2,19 +2,7 @@ import sys
 import os
 import glob
 import re
-
-symbol_list = ['{' , '}' , '(' , ')' , '[' , ']' , '. ' , ', ' , '; ' , '+' , '-' , '*' ,
-'/' , '&' , '|' , '<' , '>' , '=' , '~’']
-
-keyword_list = ['class' , 'constructor' , 'function' , 'method' , 'field' , 'static' , 'var' , 'int' ,
-'char' , 'boolean' , 'void' , 'true' , 'false' , 'null' , 'this' , 'let' , 'do' , 'if' , 'else' , 'while' , 'return']
-
-# class for storing all tokens from code
-class token:
-    def __init__(self,type, value, xml_out):
-        self.xml_out = xml_out
-        self.type = type
-        self.value = value
+from parse_engine import *
 
 
 def main():
@@ -31,21 +19,19 @@ def main():
         # cleans code and writes each token into list of token objects
         token_list = tokenizer(jack_code)
 
-
-        parsed_code = parse_class(token_list)
-
-        # temp code to print tokens xml file
-        token_code = []
-
-        for t in parsed_code:
-            token_code.append(t + '\n')
+        #creates parser object (as defined in the parse_engine module) and parses tokenized code
+        parser = parse_engine(token_list)
+        parser.new_class()
+        parsed_code = parser.parsed_list
+        for i in range(len(parsed_code)):
+            parsed_code[i] = parsed_code[i] + '\n'
 
         # creates .xml output file and opens for writing
         xml_file_name = file.strip(".jack") + ".xml"
         xml_file = open(xml_file_name, 'w')
 
         # writes translated code to output file
-        xml_file.writelines(token_code)
+        xml_file.writelines(parsed_code)
         xml_file.close()
 
 def initializer(cmd_args):
@@ -63,68 +49,6 @@ def initializer(cmd_args):
 
     return jack_files
 
-def parse_class(t_list):
-
-    # tracks current token
-    t_count = 0
-    parsed_list = []
-
-    # structured: 'class' className '{' classVarDec* subrountineDec* '}'
-    parsed_list.append('<class>')
-    parsed_list.append(t_list[t_count].xml_out) # class
-    t_count += 1
-    parsed_list.append(t_list[t_count].xml_out) # className
-    t_count += 1
-    parsed_list.append(t_list[t_count].xml_out) # {
-    t_count += 1
-    while t_list[t_count].value in ['static', 'field']:
-        t_count = parse_classVarDec(parsed_list, t_list, t_count)
-
-    #while t_list[t_count].value in ['constructor', 'function', 'method']:
-        #t_count = parse_subroutineDec(parsed_list, t_list, t_count)
-
-    parsed_list.append(t_list[t_count].xml_out) # }
-
-    parsed_list.append('</class>')
-
-    return parsed_list
-
-def parse_subroutineDec(parsed_list, t_list, t_count):
-
-    # structured: 'constructor'|'function'|'method' 'void'|type subroutineName '(' parameterList ')' subroutineBody
-    parsed_list.append('<subroutineDec>')
-    parsed_list.append(t_list[t_count].xml_out) # constructor|function|method
-    t_count += 1
-    parsed_list.append(t_list[t_count].xml_out) # 'void'|type
-    t_count += 1
-    parsed_list.append(t_list[t_count].xml_out) # subroutineName
-    t_count += 1
-    
-    parsed_list.append('</subroutineDec>')
-    return t_count
-
-
-def parse_classVarDec(parsed_list, t_list, t_count):
-
-    # structured: 'static'|'field' type varName (',' varName)* ';'
-    parsed_list.append('<classVarDec>')
-    parsed_list.append(t_list[t_count].xml_out) # static|field
-    t_count += 1
-    parsed_list.append(t_list[t_count].xml_out) # type
-    t_count += 1
-    parsed_list.append(t_list[t_count].xml_out) # varName
-    t_count += 1
-    while t_list[t_count] == ',': # checks for additiional variable declarations
-        parsed_list.append(t_list[t_count].xml_out) # ,
-        t_count += 1
-        parsed_list.append(t_list[t_count].xml_out) # varName
-        t_count += 1
-    parsed_list.append(t_list[t_count].xml_out) # ;
-    t_count += 1
-
-    parsed_list.append('</classVarDec>')
-    return t_count
-
 
 def tokenizer(raw_code):
 
@@ -137,7 +61,12 @@ def tokenizer(raw_code):
     symbol_pattern = re.compile('[\{\}\(\)\[\]\.\,\;\+\-\*\/\&\|\<\>\=\~]')
     string_pattern = re.compile('\".*?\"')
     var_pattern = re.compile('[a-zA-Z_][a-zA-Z0-9_]*')
-    int_pattern = re.compile('[0-9]')
+    int_pattern = re.compile('[0-9]*')
+
+    # used to determine in alphanumeric pattern is a keyword
+    keyword_list = ['class' , 'constructor' , 'function' , 'method' , 'field' , 'static' , 'var' , 'int' ,
+    'char' , 'boolean' , 'void' , 'true' , 'false' , 'null' , 'this' , 'let' , 'do' , 'if' , 'else' , 'while' , 'return']
+
 
     # initializes variables needed for tokenizing. i is char tracker
     token_list = []
@@ -160,10 +89,10 @@ def tokenizer(raw_code):
             i = i + len(buffer)
 
             # below specific symbols need to be replaced per Jack specification
+            buffer = buffer.replace('&', '&amp;')
             buffer = buffer.replace('<', '&lt;')
             buffer = buffer.replace('>', '&gt;')
             buffer = buffer.replace('\"', '&quot;')
-            buffer = buffer.replace('<&', '&amp;')
 
             type = 'symbol'
             xml_temp = "<" + type + "> " + buffer + " </" + type + ">"
@@ -205,5 +134,6 @@ def tokenizer(raw_code):
         i += 1 # I do not fully understand why I need this line but without it sometimes loops infinitely in unexplainable ways
 
     return token_list
+
 
 main()
