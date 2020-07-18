@@ -2,7 +2,7 @@ import sys
 import os
 import glob
 import re
-from parse_engine import *
+from comp_engine import *
 
 
 def main():
@@ -20,9 +20,10 @@ def main():
         token_list = tokenizer(jack_code)
 
         #creates parser object (as defined in the parse_engine module) and parses tokenized code
-        parser = parse_engine(token_list)
-        parser.new_class()
-        parsed_code = parser.parsed_list
+        class_name = file.strip(".jack")
+        engine = comp_engine(token_list, class_name)
+        engine.new_class()
+        parsed_code = engine.parsed_list
         for i in range(len(parsed_code)):
             parsed_code[i] = parsed_code[i] + '\n'
 

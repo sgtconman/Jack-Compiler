@@ -1,14 +1,16 @@
+from vw_write import vm_writer
 
 # class for storing all tokens from code. Stored in this module to prevent issues with circular imports
 class token:
-    def __init__(self,type, value, xml_out):
+    def __init__(self, type, value, xml_out):
         self.xml_out = xml_out
         self.type = type
         self.value = value
 
 # class that defines the recursive parsing tree
-class parse_engine:
-    def __init__(self,t_list):
+class comp_engine:
+    def __init__(self,t_list, class_name):
+        self.class_name = class_name
         self.t_list = t_list
         self.parsed_list = []
         self.t_count = 0 # tracks current token location
@@ -18,6 +20,8 @@ class parse_engine:
         self.t_count += 1
 
     def new_class(self):
+        vm_code = vm_writer() #contstructs vm code list
+
         # structured: 'class' className '{' classVarDec* subrountineDec* '}'
         self.parsed_list.append('<class>')
         self.add_token() # class
