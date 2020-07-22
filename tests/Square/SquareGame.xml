@@ -14,7 +14,6 @@
 <identifier> direction </identifier>
 <symbol> ; </symbol>
 </classVarDec>
-<subroutineDec>
 <keyword> constructor </keyword>
 <identifier> SquareGame </identifier>
 <identifier> new </identifier>
@@ -83,7 +82,6 @@
 <symbol> } </symbol>
 </subroutineBody>
 </subroutineDec>
-<subroutineDec>
 <keyword> method </keyword>
 <keyword> void </keyword>
 <identifier> dispose </identifier>
@@ -129,7 +127,6 @@
 <symbol> } </symbol>
 </subroutineBody>
 </subroutineDec>
-<subroutineDec>
 <keyword> method </keyword>
 <keyword> void </keyword>
 <identifier> moveSquare </identifier>
@@ -280,7 +277,6 @@
 <symbol> } </symbol>
 </subroutineBody>
 </subroutineDec>
-<subroutineDec>
 <keyword> method </keyword>
 <keyword> void </keyword>
 <identifier> run </identifier>

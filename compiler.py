@@ -20,12 +20,17 @@ def main():
         token_list = tokenizer(jack_code)
 
         #creates parser object (as defined in the parse_engine module) and parses tokenized code
-        class_name = file.strip(".jack")
+        class_path = file.strip('.jack')
+        class_name = class_path.split('/')[-1]
         engine = comp_engine(token_list, class_name)
         engine.new_class()
         parsed_code = engine.parsed_list
         for i in range(len(parsed_code)):
             parsed_code[i] = parsed_code[i] + '\n'
+
+        vm_code = engine.vm_code.code_list
+        for i in range(len(vm_code)):
+            vm_code[i] = vm_code[i] + '\n'
 
         # creates .xml output file and opens for writing
         xml_file_name = file.strip(".jack") + ".xml"
@@ -34,6 +39,14 @@ def main():
         # writes translated code to output file
         xml_file.writelines(parsed_code)
         xml_file.close()
+
+        # creates .vm output file and opens for writing
+        vm_file_name = class_path + ".vm"
+        vm_file = open(vm_file_name, 'w')
+
+        # writes translated code to vm output file
+        vm_file.writelines(vm_code)
+        vm_file.close()
 
 def initializer(cmd_args):
 
@@ -56,13 +69,14 @@ def tokenizer(raw_code):
     #removes comments and newlines
     cleaned_code = re.sub('/\*.*?\*/','', raw_code, flags=re.DOTALL) #removes block comments denoted with /*  *\
     cleaned_code = re.sub('//.*','', cleaned_code) #removes in-line comments denoted with //
-    cleaned_code = re.sub('\\n',' ', cleaned_code) #removes newlines
+    cleaned_code = re.sub('\\n',' ', cleaned_code) #removes linux newlines
+    cleaned_code = re.sub('\\r\\n',' ', cleaned_code) #removes windows newlines
 
     # creates regular expression objects to match Jack tokens
     symbol_pattern = re.compile('[\{\}\(\)\[\]\.\,\;\+\-\*\/\&\|\<\>\=\~]')
     string_pattern = re.compile('\".*?\"')
     var_pattern = re.compile('[a-zA-Z_][a-zA-Z0-9_]*')
-    int_pattern = re.compile('[0-9]*')
+    int_pattern = re.compile('[0-9]+')
 
     # used to determine in alphanumeric pattern is a keyword
     keyword_list = ['class' , 'constructor' , 'function' , 'method' , 'field' , 'static' , 'var' , 'int' ,

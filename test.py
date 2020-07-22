@@ -1,8 +1,8 @@
-from symbols import symbol_table
+class Main {
 
-symb_table = symbol_table()
-symb_table.define('test', 'string', 'var')
+function void convert(int value) {
+    	
+    	return;
+   }
+}
 
-weed = symb_table.kindof('test')
-weed = symb_table.varcount('local')
-print(weed)

@@ -19,7 +19,7 @@ class symbol_table:
         self.subroutine_table = []
 
     # resets subroutine symbol table
-    def start_subroutine(self, name):
+    def start_subroutine(self):
         self.subroutine_table = []
 
 
@@ -61,15 +61,16 @@ class symbol_table:
 
     # searches tables for given symbol and returns the kind. If symbol not found, returns NONE
     def kindof(self, name):
-        for symb in self.class_table:
-            if symb.name == name:
-                return symb.kind
         for symb in self.subroutine_table:
             if symb.name == name:
                 return symb.kind
+        for symb in self.class_table:
+            if symb.name == name:
+                if symb.kind == 'field':
+                    return 'this' #returns 'this' for field variable fpr object manipulation
+                return symb.kind
 
         return 'NONE'
-
 
     # searches tables for given symbol and returns the type
     def typeof(self, name):
