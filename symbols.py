@@ -1,3 +1,5 @@
+# module used by compile_engine to store and read variables and subroutine details
+
 # data structure for storing symbols in the symbol table
 class symbol:
     def __init__(self, name, type, kind, index):
