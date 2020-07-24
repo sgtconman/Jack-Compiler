@@ -1,7 +1,7 @@
 import sys
 import os
 import glob
-from comp_engine import *
+from compile_engine import *
 from tokenizer import tokenize
 
 def main():
