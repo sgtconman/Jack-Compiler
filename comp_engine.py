@@ -3,8 +3,7 @@ from symbols import symbol_table
 
 # class for storing all tokens from code. Stored in this module to prevent issues with circular imports
 class token:
-    def __init__(self, type, value, xml_out):
-        self.xml_out = xml_out
+    def __init__(self, type, value):
         self.type = type
         self.value = value
 
@@ -14,14 +13,12 @@ class comp_engine:
     def __init__(self,t_list, class_name):
         self.class_name = class_name
         self.t_list = t_list
-        self.parsed_list = []
         self.t_count = 0 # tracks current token location
         self.vm_code = vm_writer() #constructs vm code list
         self.symb_table = symbol_table() #constructs new symbol table
         self.label_count = 0 #tracks number of labels for the unique label generator
 
     def consume_token(self):
-        self.parsed_list.append(self.t_list[self.t_count].xml_out)
         self.t_count += 1
 
     def current_token(self):
@@ -35,7 +32,6 @@ class comp_engine:
     def new_class(self):
 
         # structured: 'class' className '{' classVarDec* subrountineDec* '}'
-        self.parsed_list.append('<class>')
         self.consume_token() # class
         self.consume_token() # className
         self.consume_token() # {
@@ -45,13 +41,9 @@ class comp_engine:
         while self.current_token() in ['constructor', 'function', 'method']:
             self.subroutineDec() #subroutineDec method
 
-        self.parsed_list.append(self.t_list[self.t_count].xml_out) # }
-
-        self.parsed_list.append('</class>')
 
     def classVarDec(self):
         # structured: 'static'|'field' type varName (',' varName)* ';'
-        self.parsed_list.append('<classVarDec>')
 
         var_kind = self.current_token() # static|field
         self.consume_token() # static|field
@@ -68,7 +60,6 @@ class comp_engine:
             self.symb_table.define(var_name, var_type, var_kind)
         self.consume_token() # ;
 
-        self.parsed_list.append('</classVarDec>')
 
     def subroutineDec(self):
         # structured: 'constructor'|'function'|'method' 'void'|type subroutineName '(' parameterList ')' subroutineBody
@@ -98,6 +89,7 @@ class comp_engine:
         elif self.current_token() in ['function', 'method']:
             if self.current_token() == 'method':
                 method_check = True
+                self.symb_table.define('this', 'object', 'arg') #adds THIS as arg 0 to symbol table
             else:
                 method_check = False
             self.consume_token() # function | method
@@ -119,11 +111,9 @@ class comp_engine:
         elif self.current_token() == 'method':
             return
 
-        self.parsed_list.append('</subroutineDec>')
 
     def parameterList(self):
         # structured: ((type VarName) (',' type varName)*)?
-        self.parsed_list.append('<ParameterList>')
 
         # checks for first parameter
         if self.current_token() != ')':
@@ -142,12 +132,9 @@ class comp_engine:
             self.consume_token() # varName
             self.symb_table.define(var_name, var_type, 'arg')
 
-        self.parsed_list.append('</ParameterList>')
 
     def subroutineBody(self, f_name, method_check):
         # structured: '{' varDec* statements '}'
-        self.parsed_list.append('<subroutineBody>')
-
         self.consume_token() # {
 
         #checks for all variable declarations
@@ -164,11 +151,9 @@ class comp_engine:
         self.statements() # statements method
         self.consume_token() # }
 
-        self.parsed_list.append('</subroutineBody>')
 
     def varDec(self):
         # structured: 'var' type varName (',' varName)*';'
-        self.parsed_list.append('<varDec>')
 
         self.consume_token() # var
         var_type = self.current_token() #type
@@ -185,11 +170,9 @@ class comp_engine:
             self.symb_table.define(var_name, var_type, 'var')
         self.consume_token() # ;
 
-        self.parsed_list.append('</varDec>')
 
     def statements(self):
         # structured: (letStatement|ifStatement|whileStatement|doStatement|returnStatement)*
-        self.parsed_list.append('<statements>')
 
         # checks for any additional statements
         while self.t_list[self.t_count].value in ['let','if','while','do','return']:
@@ -209,11 +192,9 @@ class comp_engine:
                 self.returnStatement() # returnStatement method
                 continue
 
-        self.parsed_list.append('</statements>')
 
     def letStatement(self):
         # structured: 'let' varName ('['expression']')? '=' expression ';'
-        self.parsed_list.append('<letStatement>')
 
         self.consume_token() # let
         var_name = self.current_token() #stores variable name
@@ -221,24 +202,39 @@ class comp_engine:
 
         #checks if variable is an array
         if self.t_list[self.t_count].value == '[':
+            array_check = True
+
             self.consume_token() # [
             self.expression() # expression method
             self.consume_token() # ]
+
+            var_kind = self.symb_table.kindof(var_name)
+            var_index = self.symb_table.indexof(var_name)
+            self.vm_code.write_push(var_kind, var_index) # pushes base address of the array
+
+            self.vm_code.write_arithmetic('add') # adds expression calculation to base array value to get target cell address
+
+        else:
+            array_check = False
 
         self.consume_token() # =
         self.expression() # expression method
         self.consume_token() # ;
 
-        # writes expression to variable in stack
-        var_kind = self.symb_table.kindof(var_name)
-        var_index = self.symb_table.indexof(var_name)
-        self.vm_code.write_pop(var_kind, var_index)
+        if array_check == True:
+            self.vm_code.write_pop('temp', 2) # stores expression value
+            self.vm_code.write_pop('pointer', 1) # sets THAT pointer to target cell address
+            self.vm_code.write_push('temp', 2) # pushes stored expression calc
+            self.vm_code.write_pop('that', 0) # writes final value to target cell address
+        else:
+            # writes expression to variable in stack
+            var_kind = self.symb_table.kindof(var_name)
+            var_index = self.symb_table.indexof(var_name)
+            self.vm_code.write_pop(var_kind, var_index)
 
-        self.parsed_list.append('</letStatement>')
 
     def ifStatement(self):
         # structured: 'if' '('expression')' '{'statements'}' ('else' '{'statements'}')?
-        self.parsed_list.append('<ifStatement>')
 
         self.consume_token() # if
         self.consume_token() # (
@@ -265,11 +261,9 @@ class comp_engine:
             self.consume_token() # }
 
         self.vm_code.write_label(notelse_label)
-        self.parsed_list.append('</ifStatement>')
 
     def whileStatement(self):
         # structured: 'while' '('expression')' '{'statements'}'
-        self.parsed_list.append('<whileStatement>')
 
         self.consume_token() # while
         while_label = self.label_generator()
@@ -291,11 +285,8 @@ class comp_engine:
         self.vm_code.write_label(break_label)
 
 
-        self.parsed_list.append('</whileStatement>')
-
     def doStatement(self):
         # structured: 'do' subroutineName '('expressionList')'| (className|varName)'.' subroutineName '('expressionList')' ';'
-        self.parsed_list.append('<doStatement>')
 
         self.consume_token() # do
 
@@ -304,7 +295,6 @@ class comp_engine:
         self.consume_token() # ;
         self.vm_code.write_pop('temp', 0) # pops dummy return value from void functions/methods
 
-        self.parsed_list.append('</doStatement>')
 
     def subroutineCall(self):
         #checks if subroutine is a method or a function
@@ -334,7 +324,6 @@ class comp_engine:
 
         self.consume_token() # (
         arg_count = self.expressionList() # expressionList method
-        print(arg_count)
         if method_check == True:
             arg_count += 1 #allocates space for object argument if callee is a method
         self.consume_token() # )
@@ -342,7 +331,6 @@ class comp_engine:
 
     def returnStatement(self):
         # structured: 'return' expression? ';'
-        self.parsed_list.append('<returnStatement>')
 
         self.consume_token() # return
 
@@ -352,11 +340,9 @@ class comp_engine:
 
         self.consume_token() # ;
 
-        self.parsed_list.append('</returnStatement>')
 
     def expressionList(self):
         # structured: (expression (',' expression)* )?
-        self.parsed_list.append('<expressionList>')
 
         arg_count = 0
 
@@ -371,13 +357,10 @@ class comp_engine:
             self.expression() #expression method
             arg_count += 1
 
-        self.parsed_list.append('</expressionList>')
-
         return arg_count
 
     def expression(self):
         # structured: (term (op term)*
-        self.parsed_list.append('<expression>')
 
         self.term() # term method
 
@@ -389,11 +372,9 @@ class comp_engine:
             op_code = op_dict[operator]
             self.vm_code.write_arithmetic(op_code)
 
-        self.parsed_list.append('</expression>')
 
     def term(self):
         # structured: integerConstant|stringConstant|keywordConstant|varName|varName'['expression']'|subroutineCall|'('expression')'|unaryOp term
-        self.parsed_list.append('<term>')
 
         # checks if term is positive integer
         if str.isdigit(self.current_token()):
@@ -403,38 +384,61 @@ class comp_engine:
         #self.consume_token() # first token of the term
 
         # checks if term is true/false. False represented as 0 and True as -1
-        if self.current_token() in ['true', 'false']:
+        elif self.current_token() in ['true', 'false']:
             self.vm_code.write_push('constant', 0)
             if self.current_token() == 'true':
                 self.vm_code.write_arithmetic('not')
             self.consume_token() #true/false term
 
+        elif self.current_token() == 'null':
+            self.vm_code.write_push('constant', 0) #null is equivalent to False
+            self.consume_token()
+
         # checks if token is THIS and, if so, pushes pointer of current object
-        if self.current_token() == 'this':
+        elif self.current_token() == 'this':
             self.vm_code.write_push('pointer', 0)
             self.consume_token()
 
+        # checks if token is a string and, if so, creates a new string object
+        elif (self.t_list[self.t_count].type == 'stringConstant'):
+            string = self.current_token()
+            str_len = len(string)
+            self.vm_code.write_push('constant', str_len)
+            self.vm_code.write_call('String.new', 1) #uses OS string function to allocate string object
+            for c in string:
+                self.vm_code.write_push('constant', ord(c)) # pushes ascii code of char for append method arg
+                self.vm_code.write_call('String.appendChar', 2) #appends char to string
+
+            self.consume_token() # string token
+
         # checks if term is a varName and then what kind of variable term
-        if (self.t_list[self.t_count].type == 'identifier'):
+        elif (self.t_list[self.t_count].type == 'identifier'):
             if self.t_list[self.t_count + 1].value in ['(','.']: # checks if subroutine
                 self.subroutineCall()
+
             elif self.t_list[self.t_count + 1].value == '[': # checks if array
+                var_name = self.current_token() #stores variable name
+
+                self.consume_token() #varName
+
                 self.consume_token() # [
                 self.expression() # expression method
                 self.consume_token() # ]
+
+                var_kind = self.symb_table.kindof(var_name)
+                var_index = self.symb_table.indexof(var_name)
+                self.vm_code.write_push(var_kind, var_index) # pushes base address of the array
+                self.vm_code.write_arithmetic('add') # adds expression calculation to base array value to get target cell address
+
+                self.vm_code.write_pop('pointer', 1) #sets THAT pointer to target cell address
+                self.vm_code.write_push('that', 0) # pushes target cell value onto stack
+
             else: #if neither of the above, then term is just varName
                 var_name = self.current_token() #stores variable name
                 var_kind = self.symb_table.kindof(var_name)
                 var_index = self.symb_table.indexof(var_name)
                 self.vm_code.write_push(var_kind, var_index)
                 self.consume_token() # varName
-
-
-        #checks if term is array value
-        elif self.t_list[self.t_count].value == '[':
-            self.consume_token() # [
-            self.expression() # expression method
-            self.consume_token() # ]
 
         # checks is term is an (expression)
         elif self.current_token() == '(':
@@ -449,7 +453,6 @@ class comp_engine:
             self.term() # term method
             self.vm_code.write_arithmetic(unary_code)
 
-        self.parsed_list.append('</term>')
 
 #used to translate operators into VM language
 op_dict = {

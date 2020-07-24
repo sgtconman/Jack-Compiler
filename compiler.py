@@ -24,21 +24,10 @@ def main():
         class_name = class_path.split('/')[-1]
         engine = comp_engine(token_list, class_name)
         engine.new_class()
-        parsed_code = engine.parsed_list
-        for i in range(len(parsed_code)):
-            parsed_code[i] = parsed_code[i] + '\n'
 
         vm_code = engine.vm_code.code_list
         for i in range(len(vm_code)):
             vm_code[i] = vm_code[i] + '\n'
-
-        # creates .xml output file and opens for writing
-        xml_file_name = file.strip(".jack") + ".xml"
-        xml_file = open(xml_file_name, 'w')
-
-        # writes translated code to output file
-        xml_file.writelines(parsed_code)
-        xml_file.close()
 
         # creates .vm output file and opens for writing
         vm_file_name = class_path + ".vm"
@@ -108,10 +97,8 @@ def tokenizer(raw_code):
             buffer = buffer.replace('<', '&lt;')
             buffer = buffer.replace('>', '&gt;')
             buffer = buffer.replace('\"', '&quot;')
-
             type = 'symbol'
-            xml_temp = "<" + type + "> " + buffer + " </" + type + ">"
-            token_list.append(token(type, buffer, xml_temp))
+            token_list.append(token(type, buffer))
             continue
 
         match = string_pattern.match(cleaned_code, i)
@@ -120,8 +107,7 @@ def tokenizer(raw_code):
             i = i + len(buffer)
             buffer = buffer.strip('"')
             type = 'stringConstant'
-            xml_temp = "<" + type + "> " + buffer + " </" + type + ">"
-            token_list.append(token(type, buffer, xml_temp))
+            token_list.append(token(type, buffer))
             continue
 
         match = var_pattern.match(cleaned_code, i)
@@ -132,9 +118,7 @@ def tokenizer(raw_code):
                 type = 'keyword'
             else:
                 type = 'identifier'
-
-            xml_temp = "<" + type + "> " + buffer + " </" + type + ">"
-            token_list.append(token(type, buffer, xml_temp))
+            token_list.append(token(type, buffer))
             continue
 
         match = int_pattern.match(cleaned_code, i)
@@ -142,8 +126,7 @@ def tokenizer(raw_code):
             buffer = match.group()
             i = i + len(buffer)
             type = 'integerConstant'
-            xml_temp = "<" + type + "> " + buffer + " </" + type + ">"
-            token_list.append(token(type, buffer, xml_temp))
+            token_list.append(token(type, buffer))
             continue
 
         i += 1 # I do not fully understand why I need this line but without it sometimes loops infinitely in unexplainable ways

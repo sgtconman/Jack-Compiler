@@ -10,7 +10,8 @@ kind_dict = {
     'var' : 'local',
     'arg' : 'argument',
     'static' : 'static',
-    'field' : 'field'
+    'field' : 'field',
+    'array' : 'local'
 }
 
 class symbol_table:
