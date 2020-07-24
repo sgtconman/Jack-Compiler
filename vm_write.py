@@ -1,3 +1,5 @@
+#simple module used by comp_engine to write and store vm_code for each class
+
 class vm_writer:
     def __init__(self):
         self.code_list = []
