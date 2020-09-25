@@ -8,8 +8,12 @@ Jack code is an OOL, similar to a simplified Java. VM code is similar to Java by
 
 Modules:
 Compiler - main module that takes input in command line and writes the .vm files. Calls tokenizer and compile_engine
+
 Tokenizer - transforms raw code into a list of tokens for feeding into the compile_engine
+
 Compile_engine - heft of the program. takes token list and parses the syntax. Then uses vm_write to turn parsed code into VM code
+
 Symbols - used by compile_engine to store and read variables and subroutine details
+
 vm_write - simple module used by comp_engine to write and store vm_code for each class
 
