@@ -7,6 +7,7 @@ Outputs: .vm file for each .jack file input (one file for each jack class)
 Jack code is an OOL, similar to a simplified Java. VM code is similar to Java bytecode. Compiler architecture based generally on Nand2Tetris book
 
 Modules:
+
 Compiler - main module that takes input in command line and writes the .vm files. Calls tokenizer and compile_engine
 
 Tokenizer - transforms raw code into a list of tokens for feeding into the compile_engine
